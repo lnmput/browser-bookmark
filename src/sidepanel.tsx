@@ -1,12 +1,11 @@
-import React from 'react';
+import React from 'react'
 import "./styles/globals.css"
-import { BookmarkTree } from './components/BookmarkTree';
-import { useBookmarks } from './hooks/useBookmarks';
-import { updateBookmark, deleteBookmark } from './services/bookmarkService';
-
+import { BookmarkTree } from './components/BookmarkTree'
+import { useBookmarks } from './hooks/useBookmarks'
+import { updateBookmark, deleteBookmark } from './services/bookmarkService'
 
 const Sidepanel: React.FC = () => {
-  const { bookmarks, loading, error } = useBookmarks();
+  const { bookmarks, loading, error } = useBookmarks()
 
   const handleEdit = async (bookmark) => {
     const newTitle = prompt('Enter new title', bookmark.title);
@@ -35,15 +34,21 @@ const Sidepanel: React.FC = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (loading) return <div className="p-4 text-white">Loading...</div>
+  if (error) return (
+    <div className="p-4 text-red-500">
+      Error: {error.message}
+      <br />
+      Please make sure you've granted the necessary permissions and are running this in a valid extension context.
+    </div>
+  )
 
   return (
-    <div className="h-screen w-full overflow-auto bg-white">
-      <h1 className="text-2xl font-bold p-4">Bookmarks</h1>
+    <div className="min-h-screen bg-gradient-to-br from-purple-700 to-blue-500 p-4">
+      <h1 className="text-2xl font-bold mb-4 text-white">Bookmarks</h1>
       <BookmarkTree bookmarks={bookmarks} onEdit={handleEdit} onDelete={handleDelete} />
     </div>
-  );
-};
+  )
+}
 
-export default Sidepanel;
+export default Sidepanel
