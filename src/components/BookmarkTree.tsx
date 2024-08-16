@@ -1,9 +1,10 @@
 // src/components/BookmarkTree.tsx
 
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { Bookmark } from '../services/bookmarkService'
 import { BookmarkItem } from './BookmarkItem'
 import { UnnamedBookmarks } from './UnnamedBookmarks'
+import { SearchBar } from './SearchBar'
 import { Card, CardContent } from "@/components/ui/card"
 
 interface BookmarkTreeProps {
@@ -17,64 +18,82 @@ export const BookmarkTree: React.FC<BookmarkTreeProps> = ({
   onEdit,
   onDelete
 }) => {
-  // 假设 bookmarks 是一个只包含一个顶层文件夹的数组
+  const [searchQuery, setSearchQuery] = useState('')
   const specialFolder = bookmarks[0]
 
-  // 收集所有无名称的书签
-  const unnamedBookmarks: Bookmark[] = []
-
-  const collectUnnamedBookmarks = (bookmark: Bookmark) => {
-    if (bookmark.children) {
-      bookmark.children.forEach(child => {
-        if (child.url && (!child.title || child.title.trim() === '')) {
-          unnamedBookmarks.push(child)
-        } else if (child.children) {
-          collectUnnamedBookmarks(child)
-        }
-      })
-    }
+  const flattenBookmarks = (items: Bookmark[]): Bookmark[] => {
+    return items.reduce((acc: Bookmark[], item) => {
+      if (item.url) {
+        acc.push(item)
+      }
+      if (item.children) {
+        acc.push(...flattenBookmarks(item.children))
+      }
+      return acc
+    }, [])
   }
 
-  collectUnnamedBookmarks(specialFolder)
+  const allBookmarks = useMemo(() => flattenBookmarks(specialFolder.children || []), [specialFolder])
 
-  // 特殊处理 specialFolder 下的第一个文件夹
-  const [firstFolder, ...otherSpecialFolders] = specialFolder.children || []
+  const filteredBookmarks = useMemo(() => {
+    if (!searchQuery) return []
+    return allBookmarks.filter(bookmark => 
+      (bookmark.title && bookmark.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (bookmark.url && bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  }, [allBookmarks, searchQuery])
 
-  // 合并 firstFolder 的子文件夹和 otherSpecialFolders
+  const unnamedBookmarks = useMemo(() => {
+    return allBookmarks.filter(bookmark => !bookmark.title || bookmark.title.trim() === '')
+  }, [allBookmarks])
+
+  const [firstFolder, ...otherFolders] = specialFolder.children || []
+
   const allFolders = [
-    ...otherSpecialFolders,
-    ...(firstFolder?.children?.filter(item => item.children) || [])
+    ...(firstFolder?.children?.filter(item => item.children) || []),
+    ...otherFolders
   ]
 
-  // 获取 firstFolder 下的直接书签
   const directBookmarks = firstFolder?.children?.filter(item => item.url) || []
 
   return (
-    <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border-none shadow-lg">
+    <Card className="bg-gradient-to-br from-white/10 to-white/5 dark:from-gray-800 dark:to-gray-900 backdrop-blur-lg border-none shadow-lg">
       <CardContent className="p-4">
-        <UnnamedBookmarks bookmarks={unnamedBookmarks} />
+        <SearchBar onSearch={setSearchQuery} />
+        {!searchQuery && <UnnamedBookmarks bookmarks={unnamedBookmarks} />}
         
-        {/* 展示所有文件夹 */}
-        {allFolders.map((folder) => (
-          <BookmarkItem
-            key={folder.id}
-            bookmark={folder}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            level={0}
-          />
-        ))}
-
-        {/* 展示 firstFolder 下的直接书签 */}
-        {directBookmarks.map((bookmark) => (
-          <BookmarkItem
-            key={bookmark.id}
-            bookmark={bookmark}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            level={0}
-          />
-        ))}
+        {searchQuery ? (
+          filteredBookmarks.map((bookmark) => (
+            <BookmarkItem
+              key={bookmark.id}
+              bookmark={bookmark}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              level={0}
+            />
+          ))
+        ) : (
+          <>
+            {allFolders.map((folder) => (
+              <BookmarkItem
+                key={folder.id}
+                bookmark={folder}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                level={0}
+              />
+            ))}
+            {directBookmarks.map((bookmark) => (
+              <BookmarkItem
+                key={bookmark.id}
+                bookmark={bookmark}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                level={0}
+              />
+            ))}
+          </>
+        )}
       </CardContent>
     </Card>
   )
