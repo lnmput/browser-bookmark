@@ -51,6 +51,10 @@ export const BookmarkItem: React.FC<BookmarkItemProps> = ({
   const isSystemFolder = level === 0 && !bookmark.url
   const bookmarkCount = bookmark.children ? bookmark.children.length : 0
 
+  if (bookmark.url && (!bookmark.title || bookmark.title.trim() === '')) {
+    return null
+  }
+
   return (
     <div>
       <div 
