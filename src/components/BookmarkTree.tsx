@@ -17,8 +17,8 @@ export const BookmarkTree: React.FC<BookmarkTreeProps> = ({
   onEdit,
   onDelete
 }) => {
-  // 假设第一个书签是我们要特殊处理的顶层文件夹
-  const [specialFolder, ...otherFolders] = bookmarks
+  // 假设 bookmarks 是一个只包含一个顶层文件夹的数组
+  const specialFolder = bookmarks[0]
 
   // 收集所有无名称的书签
   const unnamedBookmarks: Bookmark[] = []
@@ -35,25 +35,41 @@ export const BookmarkTree: React.FC<BookmarkTreeProps> = ({
     }
   }
 
-  bookmarks.forEach(collectUnnamedBookmarks)
+  collectUnnamedBookmarks(specialFolder)
+
+  // 特殊处理 specialFolder 下的第一个文件夹
+  const [firstFolder, ...otherSpecialFolders] = specialFolder.children || []
+
+  // 合并 firstFolder 的子文件夹和 otherSpecialFolders
+  const allFolders = [
+    ...otherSpecialFolders,
+    ...(firstFolder?.children?.filter(item => item.children) || [])
+  ]
+
+  // 获取 firstFolder 下的直接书签
+  const directBookmarks = firstFolder?.children?.filter(item => item.url) || []
 
   return (
     <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border-none shadow-lg">
       <CardContent className="p-4">
         <UnnamedBookmarks bookmarks={unnamedBookmarks} />
-        {specialFolder.children?.map((bookmark) => (
+        
+        {/* 展示所有文件夹 */}
+        {allFolders.map((folder) => (
           <BookmarkItem
-            key={bookmark.id}
-            bookmark={bookmark}
+            key={folder.id}
+            bookmark={folder}
             onEdit={onEdit}
             onDelete={onDelete}
             level={0}
           />
         ))}
-        {otherFolders.map((folder) => (
+
+        {/* 展示 firstFolder 下的直接书签 */}
+        {directBookmarks.map((bookmark) => (
           <BookmarkItem
-            key={folder.id}
-            bookmark={folder}
+            key={bookmark.id}
+            bookmark={bookmark}
             onEdit={onEdit}
             onDelete={onDelete}
             level={0}
